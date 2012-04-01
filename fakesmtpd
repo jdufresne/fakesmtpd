@@ -1,0 +1,55 @@
+#!python
+
+
+import argparse
+import asyncore
+import os
+import smtpd
+import tempfile
+import errno
+import smtpd
+
+
+class FakeSMTPServer(smtpd.SMTPServer):
+    def __init__(self, localaddr, path):
+        smtpd.SMTPServer.__init__(self, localaddr, None)
+        self.path = path
+        self.recipients = {}
+
+
+    def process_message(self, peer, mailfrom, rcpttos, data):
+        for recipient in rcpttos:
+            count = self.recipients.get(recipient, 0) + 1
+            self.recipients[recipient] = count
+            filename = "{}.{:d}.mail".format(recipient, count)
+            path = os.path.join(self.path, filename)
+            with open(path, 'w') as f:
+                f.write(data)
+                f.write('\n')
+
+
+def fakesmtpd_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-H', '--host', default='localhost')
+    parser.add_argument('-p', '--port', default=25)
+    path = os.path.join(tempfile.gettempdir(), 'fakesmtpd')
+    parser.add_argument('--path', default=path)
+    return parser
+
+
+def main():
+    parser = fakesmtpd_parser()
+    args = parser.parse_args()
+
+    try:
+        os.mkdir(args.path)
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
+
+    server = FakeSMTPServer((args.host, args.port), args.path)
+    asyncore.loop()
+
+
+if __name__ == '__main__':
+    main()
