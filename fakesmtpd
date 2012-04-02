@@ -11,14 +11,14 @@ import tempfile
 
 
 class FakeSMTPServer(smtpd.SMTPServer):
-    def __init__(self, localaddr, path):
+    def __init__(self, localaddr, mail_dir):
         smtpd.SMTPServer.__init__(self, localaddr, None)
         self.recipients = {}
-        self.path = path
+        self.mail_dir = mail_dir
 
         self.logger = logging.getLogger('fakesmtpd')
         self.logger.info("SMTP server started")
-        self.logger.info("Mail path %s", path)
+        self.logger.info("Mail directory %s", self.mail_dir)
 
 
     def process_message(self, peer, mailfrom, rcpttos, data):
@@ -28,7 +28,7 @@ class FakeSMTPServer(smtpd.SMTPServer):
             count = self.recipients.get(recipient, 0) + 1
             self.recipients[recipient] = count
             filename = "{}.{:d}.mail".format(recipient, count)
-            path = os.path.join(self.path, filename)
+            path = os.path.join(self.mail_dir, filename)
             with open(path, 'w') as f:
                 f.write(data)
                 f.write('\n')
@@ -37,11 +37,13 @@ class FakeSMTPServer(smtpd.SMTPServer):
 def fakesmtpd_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('-H', '--host', default='localhost')
-    parser.add_argument('-p', '--port', default=25)
-    path = os.path.join(tempfile.gettempdir(),
-                        'fakesmtpd{:d}'.format(os.getpid()))
-    parser.add_argument('--path', default=path)
-    parser.add_argument('--log')
+    parser.add_argument('-p', '--port', type=int, default=25)
+    mail_dir = os.path.join(tempfile.gettempdir(),
+                            'fakesmtpd{:d}'.format(os.getpid()))
+    parser.add_argument('--mail-dir', default=mail_dir,
+                        help="directory to save incoming mail")
+    parser.add_argument('--log-file',
+                        help="send output to a log file instead of stdout")
     return parser
 
 
@@ -49,18 +51,18 @@ def main():
     parser = fakesmtpd_parser()
     args = parser.parse_args()
 
-    logging.basicConfig(filename=args.log,
+    logging.basicConfig(filename=args.log_file,
                         format='%(asctime)s:%(levelname)s:%(message)s',
                         datefmt='%Y-%m-%d %H:%M:%S',
                         level=logging.DEBUG)
 
     try:
-        os.mkdir(args.path)
+        os.mkdir(args.mail_dir)
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise
 
-    server = FakeSMTPServer((args.host, args.port), args.path)
+    server = FakeSMTPServer((args.host, args.port), args.mail_dir)
     asyncore.loop()
 
 
