@@ -4,7 +4,7 @@ After=syslog.target network.target
 Conflicts=postfix.service exim.service sendmail.service
 
 [Service]
-ExecStart=/usr/bin/fakesmtpd
+ExecStart=/usr/bin/fakesmtpd --log=/var/log/fakesmtpd.log
 
 [Install]
 WantedBy=multi-user.target
