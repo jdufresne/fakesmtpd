@@ -1,0 +1,7 @@
+*~
+*.pyc
+*.pyo
+TAGS
+MANIFEST
+/build/
+/dist/
