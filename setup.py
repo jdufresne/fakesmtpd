@@ -8,10 +8,7 @@ def main():
     setup(
         name=name,
         version=version,
-        url='http://pypi.python.org/pypi/{name}/{version}'.format(
-            name=name,
-            version=version,
-        ),
+        url='http://pypi.python.org/pypi/{name}'.format(name=name),
         description="Fake SMTP Server",
         download_url='http://pypi.python.org/packages/source/f/{name}/{name}-{version}.tar.gz'.format(
             name=name,
