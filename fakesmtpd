@@ -2,7 +2,8 @@
 """
 Module to create a fake SMTP server. The server catches all outgoing
 messages and saves them to a file. Messages are not sent to the
-recipients. Useful for testing mail functionality of other systems.
+recipients. The module is useful for testing mail functionality of
+other systems.
 """
 
 import argparse
