@@ -1,16 +1,26 @@
 #!python
-
+"""
+Module to create a fake SMTP server. The server catches all outgoing
+messages and saves them to a file. Messages are not sent to the
+recipients. Useful for testing mail functionality of other systems.
+"""
 
 import argparse
 import asyncore
 import errno
 import logging
 import os
+import shutil
 import smtpd
 import tempfile
 
 
 class FakeSMTPServer(smtpd.SMTPServer):
+    """
+    A SMTP server that catches all outgoing messages and saves them to
+    a file. Messages are not sent to the recipients. Useful for
+    testing mail functionality of other systems.
+    """
     def __init__(self, localaddr, mail_dir):
         smtpd.SMTPServer.__init__(self, localaddr, None)
         self.recipients = {}
@@ -20,8 +30,11 @@ class FakeSMTPServer(smtpd.SMTPServer):
         self.logger.info("SMTP server started")
         self.logger.info("Mail directory %s", self.mail_dir)
 
-
     def process_message(self, peer, mailfrom, rcpttos, data):
+        """
+        Write outgoing mail data to a temporary file. Write one file
+        per recipient.
+        """
         self.logger.info("Incoming mail from %s", mailfrom)
         for recipient in rcpttos:
             self.logger.info("Logging mail for %s", recipient)
@@ -35,6 +48,10 @@ class FakeSMTPServer(smtpd.SMTPServer):
 
 
 def fakesmtpd_parser():
+    """
+    Return a command line parser for starting the SMTP server from the
+    command line.
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument('-H', '--host', default='localhost')
     parser.add_argument('-p', '--port', type=int, default=25)
@@ -48,14 +65,10 @@ def fakesmtpd_parser():
 
 
 def main():
+    """Parse the command line arguments and start the SMTP server."""
     parser = fakesmtpd_parser()
     args = parser.parse_args()
-
-    logging.basicConfig(filename=args.log_file,
-                        format='%(asctime)s:%(levelname)s:%(message)s',
-                        datefmt='%Y-%m-%d %H:%M:%S',
-                        level=logging.DEBUG)
-
+    logging.basicConfig(filename=args.log_file, level=logging.DEBUG)
     try:
         os.mkdir(args.mail_dir)
     except OSError as e:
@@ -63,7 +76,12 @@ def main():
             raise
 
     server = FakeSMTPServer((args.host, args.port), args.mail_dir)
-    asyncore.loop()
+    try:
+        asyncore.loop()
+    except KeyboardInterrupt:
+        server.logger.info("Shutting down SMTP server")
+    finally:
+        shutil.rmtree(args.mail_dir)
 
 
 if __name__ == '__main__':
