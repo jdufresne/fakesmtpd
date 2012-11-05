@@ -9,7 +9,7 @@ def main():
     setup(name=name,
           version=version,
           url='http://pypi.python.org/pypi/{name}'.format(name=name),
-          description=open('README.md').read(),
+          description=open('README.rst').read(),
           author='Jon Dufresne',
           author_email='jon@jondufresne.org',
           download_url=url.format(name=name, version=version),
