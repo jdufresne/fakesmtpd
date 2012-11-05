@@ -3,7 +3,7 @@ from distutils.core import setup
 
 def main():
     name = 'fakesmtpd'
-    version = '0.0.4'
+    version = '0.0.5'
     url = 'http://pypi.python.org/packages/source/f/{name}/{name}-{version}.tar.gz'
 
     setup(name=name,
