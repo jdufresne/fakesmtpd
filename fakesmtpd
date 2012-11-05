@@ -1,4 +1,4 @@
-#!python
+#!/usr/bin/env python
 """
 Module to create a fake SMTP server. The server catches all outgoing
 messages and saves them to a file. Messages are not sent to the
@@ -12,6 +12,7 @@ import errno
 import logging
 import os
 import shutil
+import signal
 import smtpd
 import tempfile
 
@@ -65,6 +66,27 @@ def fakesmtpd_parser():
     return parser
 
 
+def attach_signal_handlers(server):
+    """Attach signal handlers to cleanly shutdown the SMTP server."""
+    signals = {
+        signal.SIGINT: 'SIGINT',
+        signal.SIGTERM: 'SIGTERM',
+    }
+
+    def shutdown(signum, frame):
+        """
+        Log the signal received and close the SMTP server's
+        socket. The asyncore loop will end once all servers are
+        closed.
+        """
+        server.logger.info("Received signal {}".format(signals[signum]))
+        server.logger.info("Shutting down SMTP server")
+        server.close()
+
+    for signum in signals.keys():
+        signal.signal(signum, shutdown)
+
+
 def main():
     """Parse the command line arguments and start the SMTP server."""
     parser = fakesmtpd_parser()
@@ -77,12 +99,9 @@ def main():
             raise
 
     server = FakeSMTPServer((args.host, args.port), args.mail_dir)
-    try:
-        asyncore.loop()
-    except KeyboardInterrupt:
-        server.logger.info("Shutting down SMTP server")
-    finally:
-        shutil.rmtree(args.mail_dir)
+    attach_signal_handlers(server)
+    asyncore.loop()
+    shutil.rmtree(args.mail_dir)
 
 
 if __name__ == '__main__':
