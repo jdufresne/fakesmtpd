@@ -10,6 +10,8 @@ def main():
           version=version,
           url='http://pypi.python.org/pypi/{name}'.format(name=name),
           description=open('README.md').read(),
+          author='Jon Dufresne',
+          author_email='jon@jondufresne.org',
           download_url=url.format(name=name, version=version),
           classifiers=[
             'Development Status :: 3 - Alpha',
