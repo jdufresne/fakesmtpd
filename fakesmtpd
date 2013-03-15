@@ -1,4 +1,18 @@
 #!/usr/bin/env python
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 """
 Module to create a fake SMTP server. The server catches all outgoing
 messages and saves them to a file. Messages are not sent to the
@@ -14,7 +28,7 @@ import os
 import shutil
 import signal
 import smtpd
-import tempfile
+import time
 
 
 class FakeSMTPServer(smtpd.SMTPServer):
@@ -25,7 +39,6 @@ class FakeSMTPServer(smtpd.SMTPServer):
     """
     def __init__(self, localaddr, mail_dir):
         smtpd.SMTPServer.__init__(self, localaddr, None)
-        self.recipients = {}
         self.mail_dir = mail_dir
 
         self.logger = logging.getLogger('fakesmtpd')
@@ -40,9 +53,7 @@ class FakeSMTPServer(smtpd.SMTPServer):
         self.logger.info("Incoming mail from %s", mailfrom)
         for recipient in rcpttos:
             self.logger.info("Logging mail for %s", recipient)
-            count = self.recipients.get(recipient, 0) + 1
-            self.recipients[recipient] = count
-            filename = "{}.{:d}.mail".format(recipient, count)
+            filename = "{}.{:f}.mail".format(recipient, time.time())
             path = os.path.join(self.mail_dir, filename)
             with open(path, 'w') as f:
                 f.write(data)
@@ -57,9 +68,7 @@ def fakesmtpd_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('-H', '--host', default='localhost')
     parser.add_argument('-p', '--port', type=int, default=25)
-    mail_dir = os.path.join(tempfile.gettempdir(),
-                            'fakesmtpd{:d}'.format(os.getpid()))
-    parser.add_argument('--mail-dir', default=mail_dir,
+    parser.add_argument('--mail-dir',
                         help="directory to save incoming mail")
     parser.add_argument('--log-file',
                         help="send output to a log file instead of stdout")
@@ -73,7 +82,7 @@ def attach_signal_handlers(server):
         signal.SIGTERM: 'SIGTERM',
     }
 
-    def shutdown(signum, frame):
+    def shutdown(signum, _frame):
         """
         Log the signal received and close the SMTP server's
         socket. The asyncore loop will end once all servers are
@@ -91,12 +100,12 @@ def main():
     """Parse the command line arguments and start the SMTP server."""
     parser = fakesmtpd_parser()
     args = parser.parse_args()
-    logging.basicConfig(filename=args.log_file, level=logging.DEBUG)
     try:
-        os.mkdir(args.mail_dir)
+        os.makedirs(args.mail_dir, 0o700)
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise
+    logging.basicConfig(filename=args.log_file, level=logging.DEBUG)
 
     server = FakeSMTPServer((args.host, args.port), args.mail_dir)
     attach_signal_handlers(server)
