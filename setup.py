@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,12 +13,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from distutils.core import setup
+from setuptools import setup
 
 
 def main():
     name = 'fakesmtpd'
-    version = '0.0.6'
+    version = '0.0.7'
     url = 'http://pypi.python.org/packages/source/f/{name}/{name}-{version}.tar.gz'
 
     setup(name=name,
@@ -27,7 +27,7 @@ def main():
           descriptoin='Fake SMTP server',
           long_description=open('README.rst').read(),
           author='Jon Dufresne',
-          author_email='jon@jondufresne.org',
+          author_email='jon.dufresne@gmail.com',
           download_url=url.format(name=name, version=version),
           classifiers=[
             'Development Status :: 3 - Alpha',
